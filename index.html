@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#7f5af0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Adivina">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiM3ZjVhZjAiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMyY2I2N2QiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0iIzBiMGIxNiIvPjx0ZXh0IHg9IjI1NiIgeT0iMzUwIiBmb250LWZhbWlseT0iQXJpYWwsc2Fucy1zZXJpZiIgZm9udC1zaXplPSIzMDAiIGZvbnQtd2VpZ2h0PSI5MDAiIGZpbGw9InVybCgjZykiIHRleHQtYW5jaG9yPSJtaWRkbGUiPj88L3RleHQ+PC9zdmc+">
+<title>Adivina — El Juego</title>
+<style>
+  :root {
+    --bg-1:#0b0b16; --bg-2:#151529; --bg-3:#1c1c38;
+    --accent:#7f5af0; --accent-2:#2cb67d;
+    --danger:#ef4444; --warn:#f59e0b; --info:#3b82f6;
+    --text:#eaeaff; --muted:#8a8aa3; --card:#181829;
+    --border:rgba(255,255,255,0.08);
+  }
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; overflow:hidden; }
+  body {
+    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(circle at 20% 0%, #1e1b3a 0%, var(--bg-1) 60%);
+    color:var(--text);
+    display:flex; align-items:center; justify-content:center;
+    padding:16px; user-select:none;
+  }
+  #fondo { position:fixed; inset:0; z-index:0; pointer-events:none; }
+  #app {
+    position:relative; z-index:1;
+    width:100%; max-width:540px;
+    height:min(92vh, 780px);
+    background:linear-gradient(180deg, rgba(24,24,41,0.95), rgba(15,15,28,0.95));
+    border:1px solid var(--border);
+    border-radius:24px;
+    box-shadow:0 30px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06);
+    overflow:hidden; display:flex; flex-direction:column;
+    backdrop-filter:blur(20px);
+  }
+  .topbar {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 18px; border-bottom:1px solid var(--border); flex-shrink:0;
+    gap:8px;
+  }
+  .topbar h1 {
+    font-size:16px; font-weight:700; letter-spacing:0.5px;
+    background:linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+  .topbar .tools { display:flex; gap:6px; }
+  .topbar button {
+    background:transparent; border:1px solid var(--border);
+    color:var(--muted); font-size:13px; padding:6px 10px;
+    border-radius:8px; cursor:pointer; transition:all 0.2s;
+    display:flex; align-items:center; justify-content:center; min-width:36px;
+  }
+  .topbar button:hover { color:var(--text); border-color:var(--accent); }
+  .topbar button.on { color:var(--accent-2); border-color:var(--accent-2); }
+
+  .screen {
+    position:absolute; inset:0; top:53px;
+    display:flex; flex-direction:column;
+    padding:20px; opacity:0; pointer-events:none;
+    transform:translateY(12px);
+    transition:opacity 0.3s, transform 0.3s;
+    overflow-y:auto;
+  }
+  .screen.activo { opacity:1; pointer-events:auto; transform:translateY(0); }
+  .screen::-webkit-scrollbar { width:6px; }
+  .screen::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+  .menu-logo { text-align:center; margin:4px 0 18px; }
+  .menu-logo .titulo {
+    font-size:38px; font-weight:900; letter-spacing:-1px;
+    background:linear-gradient(135deg, #a78bfa 0%, #2cb67d 100%);
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent; line-height:1;
+  }
+  .menu-logo .sub {
+    font-size:11px; color:var(--muted); margin-top:8px;
+    letter-spacing:3px; text-transform:uppercase;
+  }
+
+  .modos { display:grid; gap:10px; margin-bottom:16px; }
+  .modo {
+    background:var(--card); border:1px solid var(--border);
+    border-radius:16px; padding:16px; cursor:pointer; transition:all 0.2s;
+    display:flex; align-items:center; gap:14px;
+    position:relative; overflow:hidden;
+  }
+  .modo::before {
+    content:''; position:absolute; inset:0;
+    background:linear-gradient(135deg, transparent 60%, rgba(127,90,240,0.1));
+    opacity:0; transition:opacity 0.3s;
+  }
+  .modo:hover { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 8px 24px rgba(127,90,240,0.15); }
+  .modo:hover::before { opacity:1; }
+  .modo .icono {
+    width:42px; height:42px; border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:20px; flex-shrink:0;
+  }
+  .modo.clasico .icono { background:linear-gradient(135deg,#7f5af0,#a78bfa); }
+  .modo.contra  .icono { background:linear-gradient(135deg,#ef4444,#f59e0b); }
+  .modo.super   .icono { background:linear-gradient(135deg,#2cb67d,#10b981); }
+  .modo.diario  .icono { background:linear-gradient(135deg,#3b82f6,#06b6d4); }
+  .modo .info { flex:1; min-width:0; }
+  .modo .info h3 { font-size:14px; margin-bottom:3px; }
+  .modo .info p { font-size:11px; color:var(--muted); }
+  .modo .badge {
+    position:absolute; top:8px; right:8px;
+    background:var(--warn); color:#000;
+    font-size:9px; font-weight:900; padding:2px 6px; border-radius:6px;
+    letter-spacing:0.5px;
+  }
+  .modo .badge.hecho {
+    background:var(--accent-2); color:#fff;
+  }
+
+  .mini-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:16px; }
+  .stat-mini {
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; padding:9px 5px; text-align:center;
+  }
+  .stat-mini .v { font-size:17px; font-weight:800; color:var(--accent-2); }
+  .stat-mini .l { font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-top:2px; }
+
+  .dificultades { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:18px; }
+  .dif {
+    background:var(--card); border:2px solid transparent;
+    border-radius:14px; padding:13px 6px; text-align:center;
+    cursor:pointer; transition:all 0.2s;
+  }
+  .dif:hover { transform:translateY(-2px); }
+  .dif.activo { border-color:var(--accent); background:linear-gradient(180deg,#2a2347,#1c1838); }
+  .dif .nom { font-size:12px; font-weight:800; margin-bottom:3px; }
+  .dif .det { font-size:10px; color:var(--muted); }
+  .dif .rec { font-size:10px; color:var(--accent-2); margin-top:5px; font-weight:700; }
+
+  .hud { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px; }
+  .hud .box {
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; padding:9px; text-align:center;
+  }
+  .hud .box .l { font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; }
+  .hud .box .v { font-size:20px; font-weight:800; margin-top:2px; }
+  .hud .box.alerta .v { color:var(--danger); animation:pulse 0.6s infinite; }
+  @keyframes pulse { 50% { opacity:0.5; } }
+
+  .zona-input { display:flex; gap:10px; margin-bottom:14px; }
+  input[type=number] {
+    flex:1; padding:15px; font-size:22px; text-align:center; font-weight:700;
+    border-radius:14px; border:2px solid var(--border);
+    background:#101020; color:var(--text); outline:none;
+    transition:border 0.2s, box-shadow 0.2s;
+    -moz-appearance:textfield;
+  }
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; }
+  input[type=number]:focus { border-color:var(--accent); box-shadow:0 0 0 4px rgba(127,90,240,0.15); }
+  input[type=number]:disabled { opacity:0.4; }
+
+  .btn {
+    padding:0 20px; font-size:15px; font-weight:800;
+    border-radius:14px; border:none; cursor:pointer;
+    background:linear-gradient(135deg,var(--accent),#a78bfa);
+    color:#fff; transition:transform 0.1s, opacity 0.2s;
+    box-shadow:0 8px 20px rgba(127,90,240,0.35);
+  }
+  .btn:hover { opacity:0.92; }
+  .btn:active { transform:scale(0.97); }
+  .btn:disabled { opacity:0.35; cursor:not-allowed; box-shadow:none; }
+
+  .mensaje {
+    padding:15px; border-radius:14px; text-align:center;
+    font-size:15px; min-height:58px;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--card); border:1px solid var(--border);
+    transition:all 0.25s; margin-bottom:12px; line-height:1.4;
+  }
+  .mensaje.alto { background:rgba(59,130,246,0.1); border-color:var(--info); color:#93c5fd; }
+  .mensaje.bajo { background:rgba(239,68,68,0.1); border-color:var(--danger); color:#fca5a5; }
+  .mensaje.win  { background:rgba(44,182,125,0.12); border-color:var(--accent-2); color:#86efac; font-weight:700; }
+  .mensaje.lose { background:rgba(239,68,68,0.12); border-color:var(--danger); color:#fca5a5; font-weight:700; }
+
+  .historial {
+    display:flex; flex-wrap:wrap; gap:6px; justify-content:center;
+    margin-top:auto; padding-top:10px;
+    max-height:110px; overflow-y:auto;
+  }
+  .chip {
+    font-size:12px; padding:4px 10px; border-radius:999px;
+    background:var(--card); border:1px solid var(--border);
+    font-weight:700; animation:aparece 0.3s ease;
+  }
+  .chip.alto { border-color:var(--info); color:#93c5fd; }
+  .chip.bajo { border-color:var(--danger); color:#fca5a5; }
+  @keyframes aparece { from { opacity:0; transform:scale(0.6); } }
+
+  .resultado {
+    flex:1; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center;
+    gap:12px; padding:10px 0;
+  }
+  .resultado .emoji { font-size:72px; animation:pop 0.5s cubic-bezier(0.5,1.5,0.5,1); }
+  @keyframes pop { from { transform:scale(0); } }
+  .resultado h2 { font-size:26px; font-weight:900; }
+  .resultado .puntos {
+    font-size:52px; font-weight:900;
+    background:linear-gradient(135deg,#a78bfa,#2cb67d);
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent; line-height:1;
+  }
+  .resultado .detalle { color:var(--muted); font-size:13px; }
+  .nuevo-record {
+    background:linear-gradient(90deg,var(--warn),#fbbf24);
+    color:#000; padding:6px 16px; border-radius:999px;
+    font-size:11px; font-weight:900; letter-spacing:1px;
+    animation:brilla 1s infinite;
+  }
+  @keyframes brilla { 50% { filter:brightness(1.3); } }
+
+  .acciones { display:flex; gap:10px; width:100%; margin-top:18px; }
+  .acciones .btn { flex:1; height:50px; }
+  .acciones .btn.sec {
+    background:var(--card); color:var(--text);
+    border:1px solid var(--border); box-shadow:none;
+  }
+  .acciones .btn.sec:hover { border-color:var(--accent); }
+
+  .logro-toast {
+    position:fixed; top:24px; left:50%; transform:translateX(-50%) translateY(-120%);
+    background:linear-gradient(135deg,#7f5af0,#2cb67d);
+    padding:12px 20px; border-radius:14px;
+    font-weight:800; font-size:14px; z-index:100;
+    box-shadow:0 20px 40px rgba(0,0,0,0.5);
+    transition:transform 0.5s cubic-bezier(0.5,1.5,0.5,1);
+    display:flex; align-items:center; gap:12px;
+    max-width:90vw;
+  }
+  .logro-toast.on { transform:translateX(-50%) translateY(0); }
+  .logro-toast .em { font-size:24px; }
+
+  .logros-lista { display:grid; gap:8px; margin-top:14px; }
+  .logro {
+    display:flex; align-items:center; gap:12px;
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; padding:11px;
+    opacity:0.4; transition:opacity 0.3s;
+  }
+  .logro.desbloqueado { opacity:1; border-color:var(--accent-2); }
+  .logro .em { font-size:24px; }
+  .logro .info h4 { font-size:12px; margin-bottom:2px; }
+  .logro .info p { font-size:10px; color:var(--muted); }
+
+  #confetti { position:fixed; inset:0; z-index:50; pointer-events:none; }
+
+  .reto-dia-box {
+    background:linear-gradient(135deg, rgba(59,130,246,0.15), rgba(6,182,212,0.1));
+    border:1px solid rgba(59,130,246,0.3);
+    border-radius:14px; padding:14px; margin-bottom:14px;
+    text-align:center; font-size:12px; color:#93c5fd;
+  }
+  .reto-dia-box b { color:#fff; font-size:15px; display:block; margin-bottom:4px; }
+
+  @media (max-width:420px) {
+    .menu-logo .titulo { font-size:30px; }
+    .resultado .puntos { font-size:42px; }
+    #app { border-radius:18px; }
+    .modo .info h3 { font-size:13px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="fondo"></canvas>
+<canvas id="confetti"></canvas>
+
+<div id="app">
+  <div class="topbar">
+    <h1>◆ ADIVINA</h1>
+    <div class="tools">
+      <button id="btnMusica" title="Música">🔊</button>
+      <button id="btnLogros" title="Logros">🏆</button>
+    </div>
+  </div>
+
+  <!-- MENÚ -->
+  <div class="screen activo" id="pantallaMenu">
+    <div class="menu-logo">
+      <div class="titulo">ADIVINA</div>
+      <div class="sub">El juego del número oculto</div>
+    </div>
+
+    <div class="mini-stats">
+      <div class="stat-mini"><div class="v" id="stPartidas">0</div><div class="l">Partidas</div></div>
+      <div class="stat-mini"><div class="v" id="stVictorias">0</div><div class="l">Victorias</div></div>
+      <div class="stat-mini"><div class="v" id="stRacha">0</div><div class="l">Racha</div></div>
+      <div class="stat-mini"><div class="v" id="stMaxRacha">0</div><div class="l">Máx racha</div></div>
+    </div>
+
+    <div class="modos">
+      <div class="modo clasico" data-modo="clasico">
+        <div class="icono">🎯</div>
+        <div class="info"><h3>Modo Clásico</h3><p>Adivina con intentos limitados</p></div>
+      </div>
+      <div class="modo contra" data-modo="contra">
+        <div class="icono">⏱️</div>
+        <div class="info"><h3>Contrarreloj</h3><p>Máximos aciertos en 60 segundos</p></div>
+      </div>
+      <div class="modo super" data-modo="super">
+        <div class="icono">💀</div>
+        <div class="info"><h3>Supervivencia</h3><p>Un fallo y estás fuera. Rondas infinitas</p></div>
+      </div>
+      <div class="modo diario" data-modo="diario">
+        <div class="icono">📅</div>
+        <div class="info"><h3>Reto Diario</h3><p>Un número al día. Igual para todos</p></div>
+        <div class="badge" id="badgeDiario" style="display:none;">✓</div>
+      </div>
+    </div>
+
+    <div style="margin-top:auto; text-align:center; font-size:10px; color:var(--muted); padding-top:12px;">
+      Instálalo desde tu navegador · v2.0
+    </div>
+  </div>
+
+  <!-- DIFICULTAD -->
+  <div class="screen" id="pantallaDificultad">
+    <div style="text-align:center; margin-bottom:18px;">
+      <h2 style="font-size:20px; margin-bottom:6px;">Elige dificultad</h2>
+      <p style="color:var(--muted); font-size:13px;" id="textoModo">Modo Clásico</p>
+    </div>
+
+    <div class="dificultades" id="dificultades">
+      <div class="dif activo" data-dif="1">
+        <div class="nom">Fácil</div>
+        <div class="det">1-50 · 10 int.</div>
+        <div class="rec" id="rec-1">Récord: 0</div>
+      </div>
+      <div class="dif" data-dif="2">
+        <div class="nom">Normal</div>
+        <div class="det">1-100 · 7 int.</div>
+        <div class="rec" id="rec-2">Récord: 0</div>
+      </div>
+      <div class="dif" data-dif="3">
+        <div class="nom">Difícil</div>
+        <div class="det">1-200 · 5 int.</div>
+        <div class="rec" id="rec-3">Récord: 0</div>
+      </div>
+    </div>
+
+    <div class="acciones" style="margin-top:auto;">
+      <button class="btn sec" id="btnAtrasDif">Atrás</button>
+      <button class="btn" id="btnEmpezar">Empezar</button>
+    </div>
+  </div>
+
+  <!-- JUEGO -->
+  <div class="screen" id="pantallaJuego">
+    <div class="hud">
+      <div class="box" id="boxIntentos">
+        <div class="l" id="lblIntentos">Intentos</div>
+        <div class="v" id="hudIntentos">10</div>
+      </div>
+      <div class="box">
+        <div class="l" id="lblTiempo">Tiempo</div>
+        <div class="v" id="hudTiempo">0.0</div>
+      </div>
+      <div class="box">
+        <div class="l">Rango</div>
+        <div class="v" id="hudRango" style="font-size:16px;">1-50</div>
+      </div>
+    </div>
+
+    <div class="zona-input">
+      <input type="number" id="entrada" placeholder="?" inputmode="numeric" autocomplete="off">
+      <button class="btn" id="btnProbar">Probar</button>
+    </div>
+
+    <div class="mensaje" id="mensaje">He pensado un número. ¡Dale!</div>
+    <div class="historial" id="historial"></div>
+  </div>
+
+  <!-- RESULTADO -->
+  <div class="screen" id="pantallaResultado">
+    <div class="resultado">
+      <div class="emoji" id="resEmoji">🎉</div>
+      <h2 id="resTitulo">¡Victoria!</h2>
+      <div id="resRecord" style="display:none;" class="nuevo-record">NUEVO RÉCORD</div>
+      <div class="puntos" id="resPuntos">0</div>
+      <div class="detalle" id="resDetalle">en 0 intentos</div>
+    </div>
+    <div class="acciones">
+      <button class="btn sec" id="btnMenu">Menú</button>
+      <button class="btn" id="btnReintentar">Otra vez</button>
+    </div>
+  </div>
+
+  <!-- LOGROS -->
+  <div class="screen" id="pantallaLogros">
+    <div style="text-align:center; margin-bottom:14px;">
+      <h2 style="font-size:20px;">🏆 Logros</h2>
+      <p style="color:var(--muted); font-size:13px; margin-top:4px;" id="textoLogros">0 / 0 desbloqueados</p>
+    </div>
+    <div class="logros-lista" id="listaLogros"></div>
+    <div class="acciones" style="margin-top:16px;">
+      <button class="btn sec" id="btnVolverLogros">Volver</button>
+      <button class="btn sec" id="btnReset">Resetear</button>
+    </div>
+  </div>
+</div>
+
+<div class="logro-toast" id="logroToast">
+  <div class="em" id="logroEmoji">🏆</div>
+  <div>
+    <div style="font-size:11px; opacity:0.8; letter-spacing:1px;">LOGRO DESBLOQUEADO</div>
+    <div id="logroNombre">Nombre</div>
+  </div>
+</div>
+
+<script>
+/* ============ AUDIO: efectos + MÚSICA GENERATIVA ============ */
+const AudioFX = (() => {
+  let ctx;
+  function ac() { if (!ctx) ctx = new (window.AudioContext||window.webkitAudioContext)(); return ctx; }
+  function tono(freq, dur, tipo='sine', vol=0.08, delay=0) {
+    const c = ac(); const o = c.createOscillator(); const g = c.createGain();
+    o.type = tipo; o.frequency.value = freq;
+    o.connect(g); g.connect(c.destination);
+    const t = c.currentTime + delay;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol, t+0.01);
+    g.gain.exponentialRampToValueAtTime(0.001, t+dur);
+    o.start(t); o.stop(t+dur);
+  }
+  return {
+    click:()=>tono(600,0.06,'square',0.04),
+    alto:()=>tono(300,0.15,'sine',0.06),
+    bajo:()=>tono(200,0.15,'sine',0.06),
+    win:()=>{tono(523,0.15);tono(659,0.15,'sine',0.08,0.1);tono(784,0.3,'sine',0.08,0.2);},
+    lose:()=>{tono(300,0.2,'sawtooth',0.06);tono(200,0.4,'sawtooth',0.06,0.15);},
+    logro:()=>{tono(784,0.1);tono(988,0.1,'sine',0.08,0.08);tono(1319,0.3,'sine',0.08,0.16);},
+    inicio:()=>{tono(440,0.1);tono(660,0.15,'sine',0.07,0.08);},
+    tic:()=>tono(1200,0.03,'square',0.03),
+    ctx: ac,
+  };
+})();
+
+/* ============ MÚSICA AMBIENTAL GENERATIVA ============ */
+const Musica = (() => {
+  let ctx, master, playing = false, nodos = [], lfoTimer;
+  // Progresión: Am - F - C - G (en frecuencias base para pad)
+  const acordes = [
+    [220.00, 261.63, 329.63], // Am
+    [174.61, 220.00, 261.63], // F
+    [130.81, 164.81, 196.00], // C
+    [196.00, 246.94, 293.66], // G
+  ];
+  let idxAcorde = 0;
+
+  function init() {
+    if (!ctx) {
+      ctx = new (window.AudioContext||window.webkitAudioContext)();
+      master = ctx.createGain();
+      master.gain.value = 0;
+      // Filtro global para suavizar
+      const filt = ctx.createBiquadFilter();
+      filt.type = 'lowpass';
+      filt.frequency.value = 900;
+      filt.Q.value = 0.7;
+      master.connect(filt);
+      filt.connect(ctx.destination);
+    }
+  }
+
+  function tocarAcorde(freqs, dur) {
+    const t = ctx.currentTime;
+    freqs.forEach((f, i) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = i === 0 ? 'sine' : 'triangle';
+      o.frequency.value = f;
+      // Pequeño detune por voz
+      o.detune.value = (Math.random() - 0.5) * 8;
+      // Envolvente larga (attack y release suaves)
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.06, t + dur * 0.4);
+      g.gain.linearRampToValueAtTime(0, t + dur);
+      o.connect(g); g.connect(master);
+      o.start(t);
+      o.stop(t + dur + 0.1);
+    });
+  }
+
+  function loopAcordes() {
+    if (!playing) return;
+    const dur = 8;
+    tocarAcorde(acordes[idxAcorde], dur);
+    idxAcorde = (idxAcorde + 1) % acordes.length;
+    lfoTimer = setTimeout(loopAcordes, dur * 1000 - 200);
+  }
+
+  function arrancar() {
+    init();
+    if (playing) return;
+    playing = true;
+    ctx.resume();
+    // Fade in
+    master.gain.cancelScheduledValues(ctx.currentTime);
+    master.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 2);
+    loopAcordes();
+  }
+
+  function parar() {
+    if (!ctx || !playing) return;
+    playing = false;
+    clearTimeout(lfoTimer);
+    master.gain.cancelScheduledValues(ctx.currentTime);
+    master.gain.linearRampToValueAtTime(0, ctx.currentTime + 1);
+  }
+
+  function toggle() {
+    if (playing) parar(); else arrancar();
+    return playing;
+  }
+
+  return { toggle, arrancar, parar, get playing(){ return playing; } };
+})();
+
+/* ============ PARTÍCULAS FONDO ============ */
+(() => {
+  const cv = document.getElementById('fondo'); const cx = cv.getContext('2d');
+  let W,H,ps=[];
+  function resize(){ W=cv.width=innerWidth; H=cv.height=innerHeight; }
+  resize(); addEventListener('resize',resize);
+  for (let i=0;i<40;i++) ps.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,r:Math.random()*2+.5,a:Math.random()*.4+.1});
+  (function loop(){
+    cx.clearRect(0,0,W,H);
+    for(const p of ps){p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>W)p.vx*=-1;if(p.y<0||p.y>H)p.vy*=-1;
+      cx.beginPath();cx.arc(p.x,p.y,p.r,0,Math.PI*2);cx.fillStyle=`rgba(167,139,250,${p.a})`;cx.fill();}
+    requestAnimationFrame(loop);
+  })();
+})();
+
+/* ============ CONFETTI ============ */
+const Confetti = (() => {
+  const cv = document.getElementById('confetti'); const cx = cv.getContext('2d');
+  let W,H,ps=[],raf;
+  function resize(){ W=cv.width=innerWidth; H=cv.height=innerHeight; }
+  resize(); addEventListener('resize',resize);
+  function lanzar(n=120){
+    for(let i=0;i<n;i++) ps.push({
+      x:W/2+(Math.random()-.5)*200, y:H/2,
+      vx:(Math.random()-.5)*14, vy:Math.random()*-14-6, g:0.35, life:1,
+      size:Math.random()*6+3,
+      color:['#7f5af0','#2cb67d','#f59e0b','#ef4444','#3b82f6','#a78bfa'][Math.floor(Math.random()*6)],
+      rot:Math.random()*Math.PI, vr:(Math.random()-.5)*.3,
+    });
+    if(!raf) loop();
+  }
+  function loop(){
+    cx.clearRect(0,0,W,H);
+    for(let i=ps.length-1;i>=0;i--){
+      const p=ps[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=p.g; p.vx*=.99; p.rot+=p.vr; p.life-=.008;
+      if(p.life<=0||p.y>H+50){ps.splice(i,1);continue;}
+      cx.save(); cx.translate(p.x,p.y); cx.rotate(p.rot); cx.globalAlpha=Math.max(0,p.life);
+      cx.fillStyle=p.color; cx.fillRect(-p.size/2,-p.size/2,p.size,p.size*.6); cx.restore();
+    }
+    if(ps.length) raf=requestAnimationFrame(loop); else { raf=null; cx.clearRect(0,0,W,H); }
+  }
+  return { lanzar };
+})();
+
+/* ============ STORE ============ */
+const Store = {
+  key:'adivina_save_v2',
+  data:null,
+  cargar(){ try{ const r=localStorage.getItem(this.key); this.data=r?JSON.parse(r):this.defecto(); }catch{ this.data=this.defecto(); } return this.data; },
+  defecto(){ return {
+    records:{ clasico:{1:0,2:0,3:0}, contra:{1:0,2:0,3:0}, super:{1:0,2:0,3:0} },
+    stats:{ partidas:0, victorias:0, derrotas:0, racha:0, maxRacha:0, totalPuntos:0, mejorTiempo:null },
+    logros:{},
+    diario:{ ultimoDia:null, mejor:0 },
+    musica:true,
+  }; },
+  guardar(){ localStorage.setItem(this.key, JSON.stringify(this.data)); },
+  reset(){ this.data=this.defecto(); this.guardar(); },
+};
+
+/* ============ LOGROS ============ */
+const LOGROS = [
+  {id:'primera',em:'🎮',nom:'Primera vez',desc:'Juega tu primera partida'},
+  {id:'victoria',em:'🎯',nom:'Diana',desc:'Gana una partida'},
+  {id:'perfecto',em:'💎',nom:'Perfecto',desc:'Gana a la primera'},
+  {id:'racha3',em:'🔥',nom:'En racha',desc:'Gana 3 seguidas'},
+  {id:'racha5',em:'⚡',nom:'Imparable',desc:'Gana 5 seguidas'},
+  {id:'dificil',em:'💀',nom:'Sin miedo',desc:'Gana en Difícil'},
+  {id:'contra10',em:'⏱️',nom:'Velocista',desc:'10 puntos en Contrarreloj'},
+  {id:'contra20',em:'🚀',nom:'Cohete',desc:'20 puntos en Contrarreloj'},
+  {id:'rico',em:'💰',nom:'Puntuación top',desc:'800 puntos o más'},
+  {id:'veterano',em:'👑',nom:'Veterano',desc:'Juega 25 partidas'},
+  {id:'super10',em:'🛡️',nom:'Inquebrantable',desc:'10 rondas en Supervivencia'},
+  {id:'super20',em:'🏰',nom:'Muro de acero',desc:'20 rondas en Supervivencia'},
+  {id:'diario1',em:'📅',nom:'Constante',desc:'Completa un Reto Diario'},
+  {id:'diario7',em:'🗓️',nom:'Semanal',desc:'Completa 7 retos diarios'},
+];
+let toastTimer;
+function mostrarLogro(id){
+  const l = LOGROS.find(x=>x.id===id); if(!l) return;
+  const t = document.getElementById('logroToast');
+  document.getElementById('logroEmoji').textContent = l.em;
+  document.getElementById('logroNombre').textContent = l.nom;
+  t.classList.add('on'); AudioFX.logro();
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('on'), 3200);
+}
+function desbloquear(id){
+  if(!Store.data.logros[id]){ Store.data.logros[id]=true; Store.guardar(); mostrarLogro(id); }
+}
+
+/* ============ CONFIG ============ */
+const CONFIG = {
+  clasico:{ 1:{max:50,intentos:10}, 2:{max:100,intentos:7}, 3:{max:200,intentos:5} },
+  contra: { 1:{max:50},             2:{max:100},             3:{max:200} },
+  super:  { 1:{maxIni:30},          2:{maxIni:60},           3:{maxIni:100} },
+  diario: { max:100, intentos:6 },
+};
+
+/* ============ ESTADO ============ */
+const state = {
+  modo:'clasico', dif:'1',
+  secreto:0, intentosRestantes:0,
+  inicio:0, timer:null, jugando:false, historial:[],
+  tiempoRestante:60, puntosContra:0,
+  superRonda:0, superMax:30,
+};
+
+/* ============ SEED DETERMINISTA (Reto Diario) ============ */
+function seedDeHoy(){
+  const d = new Date();
+  return d.getFullYear()*10000 + (d.getMonth()+1)*100 + d.getDate();
+}
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = a;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function diaActualKey(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+/* ============ NAVEGACIÓN ============ */
+function mostrar(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('activo'));
+  document.getElementById(id).classList.add('activo');
+}
+
+/* ============ UI HELPERS ============ */
+function setMensaje(tipo,texto){
+  const el = document.getElementById('mensaje');
+  el.className = 'mensaje' + (tipo ? ' ' + tipo : '');
+  el.textContent = texto;
+}
+function añadirChip(valor,tipo){
+  const c = document.createElement('span');
+  c.className = 'chip' + (tipo ? ' ' + tipo : '');
+  c.textContent = valor;
+  document.getElementById('historial').appendChild(c);
+}
+function pintarRecords(){
+  const r = Store.data.records[state.modo] || {1:0,2:0,3:0};
+  [1,2,3].forEach(k => {
+    const el = document.getElementById('rec-' + k);
+    if (el) el.textContent = 'Récord: ' + (r[k] || 0);
+  });
+}
+function pintarStats(){
+  const s = Store.data.stats;
+  document.getElementById('stPartidas').textContent = s.partidas;
+  document.getElementById('stVictorias').textContent = s.victorias;
+  document.getElementById('stRacha').textContent = s.racha;
+  document.getElementById('stMaxRacha').textContent = s.maxRacha;
+  // Badge diario
+  const badge = document.getElementById('badgeDiario');
+  if (Store.data.diario.ultimoDia === diaActualKey()) {
+    badge.style.display = 'inline-block';
+    badge.classList.add('hecho');
+    badge.textContent = '✓';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+function mostrarResultado(victoria, puntos, detalle, nuevoRecord){
+  document.getElementById('resEmoji').textContent = victoria ? '🎉' : '💀';
+  document.getElementById('resTitulo').textContent = victoria ? '¡Victoria!' : 'Derrota';
+  document.getElementById('resPuntos').textContent = puntos;
+  document.getElementById('resDetalle').textContent = detalle;
+  document.getElementById('resRecord').style.display = nuevoRecord ? 'inline-block' : 'none';
+  mostrar('pantallaResultado');
+}
+
+/* ============ MODO CLÁSICO ============ */
+function nuevaPartidaClasico(){
+  const cfg = CONFIG.clasico[state.dif];
+  state.secreto = Math.floor(Math.random()*cfg.max)+1;
+  state.intentosRestantes = cfg.intentos;
+  state.jugando = true; state.historial = []; state.inicio = Date.now();
+
+  document.getElementById('historial').innerHTML = '';
+  document.getElementById('entrada').value = '';
+  document.getElementById('entrada').disabled = false;
+  document.getElementById('entrada').max = cfg.max;
+  document.getElementById('btnProbar').disabled = false;
+  document.getElementById('lblIntentos').textContent = 'Intentos';
+  document.getElementById('hudIntentos').textContent = state.intentosRestantes;
+  document.getElementById('hudTiempo').textContent = '0.0';
+  document.getElementById('hudRango').textContent = '1-' + cfg.max;
+  document.getElementById('boxIntentos').classList.remove('alerta');
+  setMensaje('', `He pensado un número entre 1 y ${cfg.max}. ¡Dale!`);
+
+  clearInterval(state.timer);
+  state.timer = setInterval(()=>{
+    if(!state.jugando) return;
+    document.getElementById('hudTiempo').textContent = ((Date.now()-state.inicio)/1000).toFixed(1);
+  }, 100);
+
+  document.getElementById('entrada').focus();
+  AudioFX.inicio();
+
+  Store.data.stats.partidas++; Store.guardar();
+  if(Store.data.stats.partidas>=1) desbloquear('primera');
+  if(Store.data.stats.partidas>=25) desbloquear('veterano');
+}
+
+function probarClasico(){
+  if(!state.jugando) return;
+  const cfg = CONFIG.clasico[state.dif];
+  const val = parseInt(document.getElementById('entrada').value,10);
+  if(isNaN(val) || val<1 || val>cfg.max){ setMensaje('', `Debe ser un número entre 1 y ${cfg.max}.`); return; }
+  state.intentosRestantes--;
+  document.getElementById('hudIntentos').textContent = state.intentosRestantes;
+  if(state.intentosRestantes<=3) document.getElementById('boxIntentos').classList.add('alerta');
+  añadirChip(val, val<state.secreto?'alto':val>state.secreto?'bajo':'');
+  if(val===state.secreto){ ganarClasico(); return; }
+  if(state.intentosRestantes<=0){ perderClasico(); return; }
+  const diff = Math.abs(val-state.secreto);
+  let txt = val<state.secreto ? '🔼 Más alto' : '🔽 Más bajo';
+  if(state.intentosRestantes===2) txt += ' · Pista: cerca...';
+  else if(state.intentosRestantes===1) txt += diff <= cfg.max/10 ? ' · Pista: estás a tiro' : ' · Pista: vas frío';
+  setMensaje(val<state.secreto?'alto':'bajo', txt);
+  AudioFX[val<state.secreto?'alto':'bajo']();
+  document.getElementById('entrada').value = '';
+  document.getElementById('entrada').focus();
+}
+
+function ganarClasico(){
+  state.jugando = false; clearInterval(state.timer);
+  const dur = (Date.now()-state.inicio)/1000;
+  const cfg = CONFIG.clasico[state.dif];
+  const usados = cfg.intentos - state.intentosRestantes + 1;
+  const base = (state.intentosRestantes+1) * 100;
+  const bonus = Math.max(0, Math.floor(cfg.intentos*15 - dur*5));
+  const puntos = Math.max(10, base+bonus);
+
+  const s = Store.data.stats;
+  s.victorias++; s.racha++; s.maxRacha = Math.max(s.maxRacha, s.racha);
+  s.totalPuntos += puntos;
+  if(s.mejorTiempo===null || dur<s.mejorTiempo) s.mejorTiempo = dur;
+  Store.guardar();
+
+  desbloquear('victoria');
+  if(usados===1) desbloquear('perfecto');
+  if(s.racha>=3) desbloquear('racha3');
+  if(s.racha>=5) desbloquear('racha5');
+  if(state.dif==='3') desbloquear('dificil');
+  if(puntos>=800) desbloquear('rico');
+
+  const r = Store.data.records.clasico[state.dif] || 0;
+  const nuevo = puntos > r;
+  if(nuevo){ Store.data.records.clasico[state.dif]=puntos; Store.guardar(); }
+
+  AudioFX.win(); Confetti.lanzar(140);
+  pintarStats(); pintarRecords();
+  mostrarResultado(true, puntos, `en ${usados} intentos · ${dur.toFixed(1)}s`, nuevo);
+}
+
+function perderClasico(){
+  state.jugando = false; clearInterval(state.timer);
+  Store.data.stats.racha = 0; Store.data.stats.derrotas++;
+  Store.guardar(); AudioFX.lose(); pintarStats();
+  mostrarResultado(false, 0, `El número era ${state.secreto}`, false);
+}
+
+/* ============ MODO CONTRARRELOJ ============ */
+function nuevaPartidaContra(){
+  state.tiempoRestante = 60; state.puntosContra = 0;
+  state.jugando = true; state.historial = [];
+
+  document.getElementById('lblIntentos').textContent = 'Puntos';
+  document.getElementById('hudIntentos').textContent = '0';
+  document.getElementById('hudTiempo').textContent = '60';
+  document.getElementById('entrada').value = '';
+  document.getElementById('entrada').disabled = false;
+  document.getElementById('btnProbar').disabled = false;
+  document.getElementById('historial').innerHTML = '';
+  document.getElementById('boxIntentos').classList.remove('alerta');
+  document.getElementById('entrada').focus();
+
+  siguienteRondaContra();
+
+  clearInterval(state.timer);
+  state.timer = setInterval(()=>{
+    state.tiempoRestante--;
+    document.getElementById('hudTiempo').textContent = state.tiempoRestante;
+    if(state.tiempoRestante<=5) document.getElementById('boxIntentos').classList.add('alerta');
+    if(state.tiempoRestante<=10 && state.tiempoRestante>0) AudioFX.tic();
+    if(state.tiempoRestante<=0) terminarContra();
+  }, 1000);
+
+  Store.data.stats.partidas++; Store.guardar();
+  if(Store.data.stats.partidas>=1) desbloquear('primera');
+  if(Store.data.stats.partidas>=25) desbloquear('veterano');
+  AudioFX.inicio();
+}
+
+function siguienteRondaContra(){
+  const cfg = CONFIG.contra[state.dif];
+  state.secreto = Math.floor(Math.random()*cfg.max)+1;
+  document.getElementById('hudRango').textContent = '1-' + cfg.max;
+  document.getElementById('entrada').max = cfg.max;
+  setMensaje('', `Adivina entre 1 y ${cfg.max}`);
+}
+
+function probarContra(){
+  if(!state.jugando) return;
+  const cfg = CONFIG.contra[state.dif];
+  const val = parseInt(document.getElementById('entrada').value,10);
+  if(isNaN(val) || val<1 || val>cfg.max){ setMensaje('', `Entre 1 y ${cfg.max}.`); return; }
+
+  if(val===state.secreto){
+    state.puntosContra++;
+    document.getElementById('hudIntentos').textContent = state.puntosContra;
+    AudioFX.alto(); añadirChip(val,'alto');
+    state.tiempoRestante = Math.min(60, state.tiempoRestante+2);
+    document.getElementById('hudTiempo').textContent = state.tiempoRestante;
+    setMensaje('win', '✅ ¡Bien! +2s');
+    setTimeout(()=>{ if(state.jugando) siguienteRondaContra(); }, 400);
+  } else {
+    const diff = Math.abs(val-state.secreto);
+    let txt = val<state.secreto ? '🔼 Más alto' : '🔽 Más bajo';
+    if(diff <= cfg.max/10) txt += ' · cerca';
+    setMensaje(val<state.secreto?'alto':'bajo', txt);
+    AudioFX[val<state.secreto?'alto':'bajo']();
+  }
+  document.getElementById('entrada').value = '';
+  document.getElementById('entrada').focus();
+}
+
+function terminarContra(){
+  state.jugando = false; clearInterval(state.timer);
+  const pts = state.puntosContra;
+  Store.data.stats.racha = 0;
+  Store.data.stats.totalPuntos += pts;
+  Store.guardar();
+  if(pts>=10) desbloquear('contra10');
+  if(pts>=20) desbloquear('contra20');
+  const r = Store.data.records.contra[state.dif] || 0;
+  const nuevo = pts > r;
+  if(nuevo){ Store.data.records.contra[state.dif]=pts; Store.guardar(); }
+  if(pts>0){ AudioFX.win(); Confetti.lanzar(100+pts*5); } else AudioFX.lose();
+  pintarStats(); pintarRecords();
+  mostrarResultado(pts>0, pts, `aciertos en 60 segundos`, nuevo);
+}
+
+/* ============ MODO SUPERVIVENCIA ============ */
+function nuevaPartidaSuper(){
+  state.superRonda = 0;
+  state.superMax = CONFIG.super[state.dif].maxIni;
+  state.jugando = true; state.historial = [];
+  state.inicio = Date.now();
+
+  document.getElementById('lblIntentos').textContent = 'Ronda';
+  document.getElementById('hudIntentos').textContent = '0';
+  document.getElementById('hudTiempo').textContent = '0.0';
+  document.getElementById('entrada').value = '';
+  document.getElementById('entrada').disabled = false;
+  document.getElementById('btnProbar').disabled = false;
+  document.getElementById('historial').innerHTML = '';
+  document.getElementById('boxIntentos').classList.remove('alerta');
+  document.getElementById('entrada').focus();
+
+  clearInterval(state.timer);
+  state.timer = setInterval(()=>{
+    if(!state.jugando) return;
+    document.getElementById('hudTiempo').textContent = ((Date.now()-state.inicio)/1000).toFixed(1);
+  }, 100);
+
+  Store.data.stats.partidas++; Store.guardar();
+  if(Store.data.stats.partidas>=1) desbloquear('primera');
+  if(Store.data.stats.partidas>=25) desbloquear('veterano');
+  AudioFX.inicio();
+
+  rondaSuper();
+}
+
+function rondaSuper(){
+  state.secreto = Math.floor(Math.random()*state.superMax)+1;
+  state.intentosRestantes = 3; // 3 intentos por ronda
+  document.getElementById('hudIntentos').textContent = state.superRonda;
+  document.getElementById('hudRango').textContent = '1-' + state.superMax;
+  document.getElementById('entrada').max = state.superMax;
+  setMensaje('', `Ronda ${state.superRonda+1} · 1-${state.superMax} · 3 intentos`);
+}
+
+function probarSuper(){
+  if(!state.jugando) return;
+  const val = parseInt(document.getElementById('entrada').value,10);
+  if(isNaN(val) || val<1 || val>state.superMax){ setMensaje('', `Entre 1 y ${state.superMax}.`); return; }
+
+  if(val===state.secreto){
+    state.superRonda++;
+    document.getElementById('hudIntentos').textContent = state.superRonda;
+    AudioFX.alto(); añadirChip(val,'alto');
+    setMensaje('win', `✅ ¡Ronda ${state.superRonda} superada!`);
+    // Cada 3 rondas, ampliar rango
+    if(state.superRonda % 3 === 0) state.superMax += 30;
+    setTimeout(()=>{ if(state.jugando) rondaSuper(); }, 500);
+  } else {
+    state.intentosRestantes--;
+    añadirChip(val, val<state.secreto?'alto':'bajo');
+    if(state.intentosRestantes<=0){
+      // Fallo definitivo
+      terminarSuper();
+      return;
+    }
+    const txt = (val<state.secreto ? '🔼 Más alto' : '🔽 Más bajo') + ` · Te quedan ${state.intentosRestantes} intentos`;
+    setMensaje(val<state.secreto?'alto':'bajo', txt);
+    AudioFX[val<state.secreto?'alto':'bajo']();
+  }
+  document.getElementById('entrada').value = '';
+  document.getElementById('entrada').focus();
+}
+
+function terminarSuper(){
+  state.jugando = false; clearInterval(state.timer);
+  const ronda = state.superRonda;
+  Store.data.stats.racha = 0;
+  Store.data.stats.totalPuntos += ronda * 50;
+  Store.data.stats.derrotas++;
+  Store.guardar();
+  if(ronda>=10) desbloquear('super10');
+  if(ronda>=20) desbloquear('super20');
+
+  const r = Store.data.records.super[state.dif] || 0;
+  const nuevo = ronda > r;
+  if(nuevo){ Store.data.records.super[state.dif]=ronda; Store.guardar(); }
+  if(ronda>0){ AudioFX.win(); Confetti.lanzar(80+ronda*8); } else AudioFX.lose();
+  pintarStats(); pintarRecords();
+  mostrarResultado(ronda>0, ronda, `rondas superadas · el número era ${state.secreto}`, nuevo);
+}
+
+/* ============ MODO RETO DIARIO ============ */
+function nuevaPartidaDiario(){
+  const rng = mulberry32(seedDeHoy());
+  const cfg = CONFIG.diario;
+  state.secreto = Math.floor(rng()*cfg.max)+1;
+  state.intentosRestantes = cfg.intentos;
+  state.jugando = true; state.historial = []; state.inicio = Date.now();
+
+  document.getElementById('historial').innerHTML = '';
+  document.getElementById('entrada').value = '';
+  document.getElementById('entrada').disabled = false;
+  document.getElementById('entrada').max = cfg.max;
+  document.getElementById('btnProbar').disabled = false;
+  document.getElementById('lblIntentos').textContent = 'Intentos';
+  document.getElementById('hudIntentos').textContent = state.intentosRestantes;
+  document.getElementById('hudTiempo').textContent = '0.0';
+  document.getElementById('hudRango').textContent = '1-' + cfg.max;
+  document.getElementById('boxIntentos').classList.remove('alerta');
+  setMensaje('', `Reto del día · 1-100 · ${cfg.intentos} intentos. ¡Igual para todos!`);
+
+  clearInterval(state.timer);
+  state.timer = setInterval(()=>{
+    if(!state.jugando) return;
+    document.getElementById('hudTiempo').textContent = ((Date.now()-state.inicio)/1000).toFixed(1);
+  }, 100);
+
+  document.getElementById('entrada').focus();
+  AudioFX.inicio();
+
+  Store.data.stats.partidas++; Store.guardar();
+  if(Store.data.stats.partidas>=1) desbloquear('primera');
+  if(Store.data.stats.partidas>=25) desbloquear('veterano');
+}
+
+function probarDiario(){
+  if(!state.jugando) return;
+  const cfg = CONFIG.diario;
+  const val = parseInt(document.getElementById('entrada').value,10);
+  if(isNaN(val) || val<1 || val>cfg.max){ setMensaje('', `Entre 1 y ${cfg.max}.`); return; }
+  state.intentosRestantes--;
+  document.getElementById('hudIntentos').textContent = state.intentosRestantes;
+  if(state.intentosRestantes<=2) document.getElementById('boxIntentos').classList.add('alerta');
+  añadirChip(val, val<state.secreto?'alto':val>state.secreto?'bajo':'');
+
+  if(val===state.secreto){ ganarDiario(); return; }
+  if(state.intentosRestantes<=0){ perderDiario(); return; }
+
+  const txt = val<state.secreto ? '🔼 Más alto' : '🔽 Más bajo';
+  setMensaje(val<state.secreto?'alto':'bajo', txt);
+  AudioFX[val<state.secreto?'alto':'bajo']();
+  document.getElementById('entrada').value = '';
+  document.getElementById('entrada').focus();
+}
+
+function ganarDiario(){
+  state.jugando = false; clearInterval(state.timer);
+  const dur = (Date.now()-state.inicio)/1000;
+  const usados = CONFIG.diario.intentos - state.intentosRestantes + 1;
+  const puntos = Math.max(10, (state.intentosRestantes+1)*80 - Math.floor(dur*3));
+
+  const d = Store.data.diario;
+  const hoy = diaActualKey();
+  const yaEstaba = d.ultimoDia === hoy;
+  d.ultimoDia = hoy;
+  if(!yaEstaba){
+    d.completados = (d.completados || 0) + 1;
+  }
+  if(puntos > (d.mejor || 0)) d.mejor = puntos;
+
+  Store.data.stats.victorias++;
+  Store.data.stats.racha++;
+  Store.data.stats.maxRacha = Math.max(Store.data.stats.maxRacha, Store.data.stats.racha);
+  Store.data.stats.totalPuntos += puntos;
+  Store.guardar();
+
+  if(!yaEstaba){
+    desbloquear('diario1');
+    if((d.completados||0) >= 7) desbloquear('diario7');
+  }
+  desbloquear('victoria');
+
+  AudioFX.win(); Confetti.lanzar(150);
+  pintarStats();
+  mostrarResultado(true, puntos, `en ${usados} intentos · ${dur.toFixed(1)}s`, puntos > (d.mejor - puntos > 0 ? 0 : 0));
+}
+
+function perderDiario(){
+  state.jugando = false; clearInterval(state.timer);
+  Store.data.stats.racha = 0; Store.data.stats.derrotas++;
+  Store.guardar(); AudioFX.lose(); pintarStats();
+  mostrarResultado(false, 0, `El número era ${state.secreto}. Vuelve mañana.`, false);
+}
+
+/* ============ LANZAR PARTIDA SEGÚN MODO ============ */
+function empezarPartida(){
+  if(state.modo==='clasico') nuevaPartidaClasico();
+  else if(state.modo==='contra') nuevaPartidaContra();
+  else if(state.modo==='super') nuevaPartidaSuper();
+  else if(state.modo==='diario') nuevaPartidaDiario();
+}
+
+/* ============ EVENTOS ============ */
+document.querySelectorAll('.modo').forEach(m=>{
+  m.addEventListener('click', ()=>{
+    AudioFX.click();
+    state.modo = m.dataset.modo;
+    const textos = { clasico:'Modo Clásico', contra:'Contrarreloj · 60s', super:'Supervivencia · 1 fallo y fuera', diario:'Reto Diario · 1 intento al día' };
+    document.getElementById('textoModo').textContent = textos[state.modo];
+    pintarRecords();
+    mostrar('pantallaDificultad');
+  });
+});
+
+document.getElementById('dificultades').addEventListener('click', e=>{
+  const d = e.target.closest('.dif'); if(!d) return;
+  AudioFX.click();
+  state.dif = d.dataset.dif;
+  document.querySelectorAll('.dif').forEach(x=>x.classList.remove('activo'));
+  d.classList.add('activo');
+});
+
+document.getElementById('btnAtrasDif').addEventListener('click', ()=>{ AudioFX.click(); mostrar('pantallaMenu'); });
+
+document.getElementById('btnEmpezar').addEventListener('click', ()=>{
+  AudioFX.click();
+  if(!Musica.playing && Store.data.musica) { try { Musica.arrancar(); } catch {} }
+  mostrar('pantallaJuego');
+  setTimeout(empezarPartida, 100);
+});
+
+document.getElementById('btnProbar').addEventListener('click', ()=>{
+  if(state.modo==='clasico') probarClasico();
+  else if(state.modo==='contra') probarContra();
+  else if(state.modo==='super') probarSuper();
+  else if(state.modo==='diario') probarDiario();
+});
+
+document.getElementById('entrada').addEventListener('keydown', e=>{
+  if(e.key==='Enter') document.getElementById('btnProbar').click();
+});
+
+document.getElementById('btnMenu').addEventListener('click', ()=>{
+  AudioFX.click();
+  document.getElementById('lblIntentos').textContent = 'Intentos';
+  pintarStats(); mostrar('pantallaMenu');
+});
+
+document.getElementById('btnReintentar').addEventListener('click', ()=>{
+  AudioFX.click();
+  mostrar('pantallaJuego');
+  setTimeout(empezarPartida, 100);
+});
+
+document.getElementById('btnLogros').addEventListener('click', ()=>{
+  AudioFX.click(); pintarLogros(); mostrar('pantallaLogros');
+});
+
+document.getElementById('btnVolverLogros').addEventListener('click', ()=>{ AudioFX.click(); mostrar('pantallaMenu'); });
+
+document.getElementById('btnReset').addEventListener('click', ()=>{
+  if(confirm('¿Borrar TODO tu progreso?')){
+    Store.reset(); pintarStats(); pintarRecords(); pintarLogros();
+    alert('Progreso borrado.');
+  }
+});
+
+document.getElementById('btnMusica').addEventListener('click', ()=>{
+  const on = Musica.toggle();
+  Store.data.musica = on; Store.guardar();
+  document.getElementById('btnMusica').classList.toggle('on', on);
+  document.getElementById('btnMusica').textContent = on ? '🔊' : '🔇';
+});
+
+function pintarLogros(){
+  const lista = document.getElementById('listaLogros');
+  lista.innerHTML = '';
+  let d = 0;
+  LOGROS.forEach(l=>{
+    const on = !!Store.data.logros[l.id]; if(on) d++;
+    const el = document.createElement('div');
+    el.className = 'logro' + (on ? ' desbloqueado' : '');
+    el.innerHTML = `
+      <div class="em">${on ? l.em : '🔒'}</div>
+      <div class="info"><h4>${l.nom}</h4><p>${l.desc}</p></div>`;
+    lista.appendChild(el);
+  });
+  document.getElementById('textoLogros').textContent = `${d} / ${LOGROS.length} desbloqueados`;
+}
+
+/* ============ SERVICE WORKER ============ */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  });
+}
+
+/* ============ INIT ============ */
+Store.cargar();
+pintarStats();
+pintarRecords();
+pintarLogros();
+
+// Estado del botón de música
+const btnM = document.getElementById('btnMusica');
+btnM.classList.toggle('on', !!Store.data.musica);
+btnM.textContent = Store.data.musica ? '🔊' : '🔇';
+
+// Desbloqueo de AudioContext en primer click
+document.body.addEventListener('click', ()=>{
+  try { AudioFX.ctx().resume(); } catch {}
+  if(Store.data.musica && !Musica.playing) { try { Musica.arrancar(); } catch {} }
+}, { once:true });
+</script>
+</body>
+</html>
